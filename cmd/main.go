@@ -12,21 +12,20 @@ import (
 	"github.com/oklog/run"
 	"github.com/rafaeljesus/srv-consumer/pkg/handler"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
-	amqpwrap "github.com/rafaeljesus/srv-consumer/pkg/platform/message/amqp"
+	"github.com/rafaeljesus/srv-consumer/pkg/platform/message/amqp"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/stats"
 	"github.com/rafaeljesus/srv-consumer/pkg/storage/inmem"
-	"github.com/streadway/amqp"
 )
 
 func main() {
-	conn, ch, err := createConnAndChan("amqp://guest:guest@localhost:5672")
+	conn, ch, err := amqp.NewConnection("amqp://guest:guest@localhost:5672")
 	if err != nil {
 		log.Fatalf("failed to init rabbit connection: %v", err)
 	}
 	defer conn.Close()
 
 	s := new(stats.Client)
-	consumer := amqpwrap.NewConsumer(ch)
+	consumer := amqp.NewConsumer(ch)
 	store := inmem.New("memory://localhost")
 	events := []struct {
 		routingKey string
@@ -59,7 +58,7 @@ func main() {
 	})
 
 	for _, e := range events {
-		h, err := amqpwrap.NewListener(e.routingKey, e.exchange, consumer, e.handler, s)
+		h, err := amqp.NewListener(e.routingKey, e.exchange, consumer, e.handler, s)
 		if err != nil {
 			log.Fatalf("failed to create consumer: %v", err)
 		}
@@ -74,20 +73,6 @@ func main() {
 
 	log.Print("running consumers...")
 	g.Run()
-}
-
-func createConnAndChan(dsn string) (*amqp.Connection, *amqp.Channel, error) {
-	conn, err := amqp.Dial(dsn)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return conn, ch, nil
 }
 
 func interrupt(cancel <-chan struct{}) error {
