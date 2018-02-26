@@ -20,7 +20,7 @@ func New(ch *amqp.Channel) *Listener {
 }
 
 // Listen creates a amqp consumer
-func (l *Listener) Listen(exchange, key string) (<-chan amqp.Delivery, error) {
+func (l *Listener) Listen(key, exchange string) (<-chan amqp.Delivery, error) {
 	if err := l.ch.ExchangeDeclare(exchange, kind, true, false, false, false, nil); err != nil {
 		return nil, err
 	}

@@ -20,7 +20,9 @@ type (
 // New creates a new in memory storage.
 func New(dsn string) *Storage {
 	return &Storage{
-		Driver: "inmem",
+		Driver:  "inmem",
+		users:   make(map[uint]*pkg.User),
+		nextIDs: make(map[interface{}]uint),
 	}
 }
 

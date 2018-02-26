@@ -51,8 +51,6 @@ func main() {
 	}
 
 	var g run.Group
-	ctx, cancel := context.WithCancel(context.Background())
-
 	cancelchan := make(chan struct{})
 	g.Add(func() error {
 		return interrupt(cancelchan)
@@ -63,10 +61,10 @@ func main() {
 	for _, e := range events {
 		h, err := consumer.New(e.routingKey, e.exchange, lner, e.handler, s)
 		if err != nil {
-			// TODO cancel ctx
 			log.Fatalf("failed to create consumer: %v", err)
 		}
 
+		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
 			return h.Run(ctx)
 		}, func(error) {
