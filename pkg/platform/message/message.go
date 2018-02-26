@@ -14,11 +14,16 @@ type (
 	// Message is the RabbitMQ message
 	Message struct {
 		Acknowledger
-		Body []byte
+		Headers map[string]interface{}
+		Body    []byte
 	}
 )
 
 // New create new application message
 func New(ac Acknowledger, body []byte) *Message {
-	return &Message{ac, body}
+	return &Message{
+		Acknowledger: ac,
+		Body:         body,
+		Headers:      make(map[string]interface{}),
+	}
 }

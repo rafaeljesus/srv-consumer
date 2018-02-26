@@ -10,9 +10,9 @@ import (
 	"syscall"
 
 	"github.com/oklog/run"
-	"github.com/rafaeljesus/srv-consumer/pkg/consumer"
 	"github.com/rafaeljesus/srv-consumer/pkg/handler"
-	"github.com/rafaeljesus/srv-consumer/pkg/listener"
+	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	amqpwrap "github.com/rafaeljesus/srv-consumer/pkg/platform/message/amqp"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/stats"
 	"github.com/rafaeljesus/srv-consumer/pkg/storage/inmem"
 	"github.com/streadway/amqp"
@@ -26,12 +26,12 @@ func main() {
 	defer conn.Close()
 
 	s := new(stats.Client)
-	lner := listener.New(ch)
+	consumer := amqpwrap.NewConsumer(ch)
 	store := inmem.New("memory://localhost")
 	events := []struct {
 		routingKey string
 		exchange   string
-		handler    consumer.Handler
+		handler    message.Handler
 	}{
 		{
 			"user.created",
@@ -59,7 +59,7 @@ func main() {
 	})
 
 	for _, e := range events {
-		h, err := consumer.New(e.routingKey, e.exchange, lner, e.handler, s)
+		h, err := amqpwrap.NewListener(e.routingKey, e.exchange, consumer, e.handler, s)
 		if err != nil {
 			log.Fatalf("failed to create consumer: %v", err)
 		}

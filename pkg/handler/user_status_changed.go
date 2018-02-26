@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
 	"github.com/rafaeljesus/srv-consumer/pkg/errors"
-	"github.com/rafaeljesus/srv-consumer/pkg/message"
+	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
 )
 
 type (
@@ -19,7 +20,7 @@ func NewUserStatusChanged(s pkg.UserStore) *UserStatusChanged {
 	return &UserStatusChanged{s}
 }
 
-func (u *UserStatusChanged) Handle(m *message.Message) error {
+func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) error {
 	defer m.Ack(true)
 
 	user := new(pkg.User)
