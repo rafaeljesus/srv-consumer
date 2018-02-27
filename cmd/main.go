@@ -49,8 +49,10 @@ func main() {
 		},
 	}
 
-	var g run.Group
+	ctx, cancel := context.WithCancel(context.Background())
 	cancelchan := make(chan struct{})
+
+	var g run.Group
 	g.Add(func() error {
 		return interrupt(cancelchan)
 	}, func(error) {
@@ -63,7 +65,6 @@ func main() {
 			log.Fatalf("failed to create consumer: %v", err)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
 			return h.Run(ctx)
 		}, func(error) {

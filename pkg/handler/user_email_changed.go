@@ -11,15 +11,18 @@ import (
 )
 
 type (
+	// UserEmailChanged is the message handler.
 	UserEmailChanged struct {
 		store pkg.UserStore
 	}
 )
 
+// NewUserEmailChanged returns new UserEmailChanged struct.
 func NewUserEmailChanged(s pkg.UserStore) *UserEmailChanged {
 	return &UserEmailChanged{s}
 }
 
+// Handle is the user email changed message handler.
 func (u *UserEmailChanged) Handle(ctx context.Context, m *message.Message) error {
 	defer m.Ack(true)
 

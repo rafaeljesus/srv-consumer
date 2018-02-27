@@ -11,15 +11,18 @@ import (
 )
 
 type (
+	// UserStatusChanged is the message handler.
 	UserStatusChanged struct {
 		store pkg.UserStore
 	}
 )
 
+// NewUserStatusChanged returns new UserStatusChanged struct.
 func NewUserStatusChanged(s pkg.UserStore) *UserStatusChanged {
 	return &UserStatusChanged{s}
 }
 
+// Handle is the user created message handler.
 func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) error {
 	defer m.Ack(true)
 

@@ -7,6 +7,11 @@ const (
 	queue = "srv-consumer"
 )
 
+var (
+	// make sure Consumer satisfies message.Consumer interface.
+	_ message.Consume = (*Consumer)(nil)
+)
+
 type (
 	// Consumer is a convenient way for binding exchange, queue and consumer.
 	Consumer struct {
@@ -19,7 +24,7 @@ func NewConsumer(ch *amqp.Channel) *Consumer {
 	return &Consumer{ch}
 }
 
-// Consumer creates a amqp consumer
+// Consume creates a amqp consumer
 func (c *Consumer) Consume(key, exchange string) (<-chan amqp.Delivery, error) {
 	if err := c.ch.ExchangeDeclare(exchange, kind, true, false, false, false, nil); err != nil {
 		return nil, err

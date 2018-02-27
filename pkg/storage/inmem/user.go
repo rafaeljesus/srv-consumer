@@ -5,6 +5,7 @@ import (
 	apperrors "github.com/rafaeljesus/srv-consumer/pkg/errors"
 )
 
+// Add a new user to the store.
 func (s *Storage) Add(user *pkg.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -21,6 +22,7 @@ func (s *Storage) Add(user *pkg.User) error {
 	return nil
 }
 
+// Save a user to the store.
 func (s *Storage) Save(user *pkg.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
