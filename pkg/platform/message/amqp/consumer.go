@@ -1,6 +1,9 @@
 package amqp
 
-import "github.com/streadway/amqp"
+import (
+	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/streadway/amqp"
+)
 
 const (
 	kind  = "topic"
@@ -9,7 +12,7 @@ const (
 
 var (
 	// make sure Consumer satisfies message.Consumer interface.
-	_ message.Consume = (*Consumer)(nil)
+	_ message.Consumer = (*Consumer)(nil)
 )
 
 type (
