@@ -35,6 +35,10 @@ func TestUserCreated(t *testing.T) {
 			"handle conflict error",
 			testHandleConflictError,
 		},
+		{
+			"handle unexpected error",
+			testHandleUnexpectedError,
+		},
 	}
 
 	for _, test := range tests {
@@ -145,5 +149,36 @@ func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	}
 	if !acker.AckInvoked {
 		t.Fatal("expected message.Ack() to be invoked")
+	}
+}
+
+func testHandleUnexpectedError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.AddFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
+	acker.NackFunc = func(multiple, requeue bool) error {
+		if multiple {
+			t.Fatal("unexpected multiple")
+		}
+		if !requeue {
+			t.Fatal("unexpected requeue")
+		}
+		return nil
+	}
+	body := []byte(`{
+		"email": "foo@mail.com",
+		"username": "foo",
+		"status": "new"
+	}`)
+
+	msg := message.New(acker, body)
+	h := NewUserCreated(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err: %v", err)
+	}
+	if !store.AddInvoked {
+		t.Fatal("expected store.Add() to not be invoked")
+	}
+	if !acker.NackInvoked {
+		t.Fatal("expected message.Nack() to be invoked")
 	}
 }
