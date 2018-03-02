@@ -1,4 +1,4 @@
-package amqp
+package listener
 
 import (
 	"context"
@@ -59,7 +59,7 @@ func testCreateNewListener(t *testing.T, consumer *mock.Consumer, handler *mock.
 		return make(<-chan amqp.Delivery), nil
 	}
 
-	if _, err := NewListener("key", "ex", consumer, handler, stats); err != nil {
+	if _, err := New("key", "ex", consumer, handler, stats); err != nil {
 		t.Fatalf("expected to create new listener: %v", err)
 	}
 	if !consumer.ConsumeInvoked {
@@ -69,7 +69,7 @@ func testCreateNewListener(t *testing.T, consumer *mock.Consumer, handler *mock.
 
 func testFailToCreateNewListener(t *testing.T, consumer *mock.Consumer, handler *mock.Handler, stats *mock.Stats) {
 	consumer.ConsumeFunc = func(key, ex string) (<-chan amqp.Delivery, error) { return nil, amqpError }
-	if _, err := NewListener("key", "ex", consumer, handler, stats); err != amqpError {
+	if _, err := New("key", "ex", consumer, handler, stats); err != amqpError {
 		t.Fatalf("expected to have amqpError: %v", err)
 	}
 	if !consumer.ConsumeInvoked {
@@ -90,7 +90,7 @@ func testRunListener(t *testing.T, consumer *mock.Consumer, handler *mock.Handle
 	}
 	handler.HandleFunc = func(ctx context.Context, m *message.Message) error {
 		if m == nil {
-			t.Fatal("unexpected message: %v", m)
+			t.Fatalf("unexpected message: %v", m)
 		}
 		return nil
 	}
@@ -103,7 +103,7 @@ func testRunListener(t *testing.T, consumer *mock.Consumer, handler *mock.Handle
 		}
 	}
 
-	l, err := NewListener("key", "ex", consumer, handler, stats)
+	l, err := New("key", "ex", consumer, handler, stats)
 	if err != nil {
 		t.Fatalf("expected to create new listener: %v", err)
 	}
@@ -117,9 +117,14 @@ func testRunListener(t *testing.T, consumer *mock.Consumer, handler *mock.Handle
 	go l.Run(ctx)
 	msgchan <- amqp.Delivery{Body: []byte(`foo`)}
 
+	handler.RLock()
+	defer handler.RUnlock()
 	if !handler.HandleInvoked {
 		t.Fatal("expected handle.Handler() to be invoked")
 	}
+
+	stats.RLock()
+	defer stats.RUnlock()
 	if !stats.TrackInvoked {
 		t.Fatal("expected stats.Track() to be invoked")
 	}
@@ -130,7 +135,7 @@ func testHandlerContextDone(t *testing.T, consumer *mock.Consumer, handler *mock
 	handler.HandleFunc = func(ctx context.Context, m *message.Message) error { return nil }
 	stats.TrackFunc = func(tm time.Time, ok bool) {}
 
-	l, err := NewListener("key", "ex", consumer, handler, stats)
+	l, err := New("key", "ex", consumer, handler, stats)
 	if err != nil {
 		t.Fatalf("expected to create new listener: %v", err)
 	}

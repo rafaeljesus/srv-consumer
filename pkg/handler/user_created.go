@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
-	"github.com/rafaeljesus/srv-consumer/pkg/errors"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
 )
 
@@ -36,7 +35,7 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 		log.Print("user successfully added")
 		m.Ack(false)
 		return nil
-	case errors.ErrConflict:
+	case pkg.ErrConflict:
 		log.Print("user already exists")
 		m.Ack(false)
 		return err

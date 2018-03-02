@@ -11,6 +11,7 @@ import (
 
 	"github.com/oklog/run"
 	"github.com/rafaeljesus/srv-consumer/pkg/handler"
+	"github.com/rafaeljesus/srv-consumer/pkg/listener"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message/amqp"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/stats"
@@ -24,8 +25,6 @@ func main() {
 	}
 	defer conn.Close()
 
-	s := new(stats.Client)
-	consumer := amqp.NewConsumer(ch)
 	store := inmem.New("memory://localhost")
 	events := []struct {
 		routingKey string
@@ -49,9 +48,7 @@ func main() {
 		},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	cancelchan := make(chan struct{})
-
 	var g run.Group
 	g.Add(func() error {
 		return interrupt(cancelchan)
@@ -59,12 +56,15 @@ func main() {
 		close(cancelchan)
 	})
 
+	s := new(stats.Client)
+	consumer := amqp.NewConsumer(ch)
 	for _, e := range events {
-		h, err := amqp.NewListener(e.routingKey, e.exchange, consumer, e.handler, s)
+		h, err := listener.New(e.routingKey, e.exchange, consumer, e.handler, s)
 		if err != nil {
 			log.Fatalf("failed to create consumer: %v", err)
 		}
 
+		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
 			return h.Run(ctx)
 		}, func(error) {
@@ -73,7 +73,9 @@ func main() {
 	}
 
 	log.Print("running consumers...")
-	g.Run()
+	if err := g.Run(); err != nil {
+		log.Fatalf("failed to run actors group: %v", err)
+	}
 }
 
 func interrupt(cancel <-chan struct{}) error {

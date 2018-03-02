@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
-	"github.com/rafaeljesus/srv-consumer/pkg/errors"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
 )
 
@@ -33,7 +32,7 @@ func (u *UserEmailChanged) Handle(ctx context.Context, m *message.Message) error
 	}
 
 	if err := u.store.Save(user); err != nil {
-		if err == errors.ErrNotFound {
+		if err == pkg.ErrNotFound {
 			log.Print("user not found")
 		} else {
 			log.Printf("failed to save user to store: %v", err)

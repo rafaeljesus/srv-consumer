@@ -1,9 +1,6 @@
 package inmem
 
-import (
-	"github.com/rafaeljesus/srv-consumer/pkg"
-	apperrors "github.com/rafaeljesus/srv-consumer/pkg/errors"
-)
+import "github.com/rafaeljesus/srv-consumer/pkg"
 
 // Add a new user to the store.
 func (s *Storage) Add(user *pkg.User) error {
@@ -12,7 +9,7 @@ func (s *Storage) Add(user *pkg.User) error {
 
 	for _, in := range s.users {
 		if in.Username == user.Username {
-			return apperrors.ErrConflict
+			return pkg.ErrConflict
 		}
 	}
 
@@ -28,7 +25,7 @@ func (s *Storage) Save(user *pkg.User) error {
 	defer s.mu.Unlock()
 
 	if _, ok := s.users[user.ID]; !ok {
-		return apperrors.ErrNotFound
+		return pkg.ErrNotFound
 	}
 
 	s.users[user.ID] = user

@@ -1,4 +1,4 @@
-package amqp
+package listener
 
 import (
 	"context"
@@ -25,8 +25,8 @@ type (
 	}
 )
 
-// NewListener returns a configured listener.
-func NewListener(key, ex string, c message.Consumer, h message.Handler, s Stats) (*Listener, error) {
+// New returns a configured listener.
+func New(key, ex string, c message.Consumer, h message.Handler, s Stats) (*Listener, error) {
 	msgchan, err := c.Consume(key, ex)
 	if err != nil {
 		return nil, err
