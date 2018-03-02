@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
@@ -33,15 +34,21 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 	switch err {
 	case nil:
 		log.Print("user successfully added")
-		m.Ack(false)
+		if err := m.Ack(false); err != nil {
+			return fmt.Errorf("failed to ack message: %v", err)
+		}
 		return nil
 	case pkg.ErrConflict:
 		log.Print("user already exists")
-		m.Ack(false)
-		return err
+		if err := m.Ack(false); err != nil {
+			return fmt.Errorf("failed to nack message: %v", err)
+		}
+		return nil
 	default:
 		log.Printf("failed to add user to store: %v", err)
-		m.Nack(false, true)
-		return err
+		if err := m.Nack(false, true); err != nil {
+			return fmt.Errorf("failed to reject message: %v", err)
+		}
+		return nil
 	}
 }
