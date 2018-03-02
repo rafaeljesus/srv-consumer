@@ -2,11 +2,16 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
 	"github.com/rafaeljesus/srv-consumer/pkg/mock"
 	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+)
+
+var (
+	errAcker = errors.New("acker error")
 )
 
 func TestUserCreated(t *testing.T) {
@@ -15,8 +20,20 @@ func TestUserCreated(t *testing.T) {
 		function func(*testing.T, *mock.UserStore, *mock.Acknowledger)
 	}{
 		{
-			"handler user created",
+			"handle user created",
 			testHandleUserCreated,
+		},
+		{
+			"fail to unmarshal body",
+			testFailToUnmarshalBody,
+		},
+		{
+			"fail to ack when unmarshal body error",
+			testFailAckWhenUnmarshalBodyError,
+		},
+		{
+			"handle conflict error",
+			testHandleConflictError,
 		},
 	}
 
@@ -59,6 +76,72 @@ func testHandleUserCreated(t *testing.T, store *mock.UserStore, acker *mock.Ackn
 	}
 	if !store.AddInvoked {
 		t.Fatal("expected store.Add() to be invoked")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be invoked")
+	}
+}
+
+func testFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.AddFunc = func(user *pkg.User) error { return nil }
+	acker.AckFunc = func(multiple bool) error { return nil }
+	body := []byte(``)
+
+	msg := message.New(acker, body)
+	h := NewUserCreated(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err: %v", err)
+	}
+	if store.AddInvoked {
+		t.Fatal("expected store.Add() to not be invoked")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be invoked")
+	}
+}
+
+func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.AddFunc = func(user *pkg.User) error { return nil }
+	acker.AckFunc = func(multiple bool) error { return errAcker }
+	body := []byte(``)
+
+	msg := message.New(acker, body)
+	h := NewUserCreated(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err: %v", err)
+	}
+	if store.AddInvoked {
+		t.Fatal("expected store.Add() to not be invoked")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be invoked")
+	}
+}
+
+func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.AddFunc = func(user *pkg.User) error { return pkg.ErrConflict }
+	acker.AckFunc = func(multiple bool) error {
+		if multiple {
+			t.Fatal("unexpected multiple")
+		}
+		return nil
+	}
+	body := []byte(`{
+		"email": "foo@mail.com",
+		"username": "foo",
+		"status": "new"
+	}`)
+
+	msg := message.New(acker, body)
+	h := NewUserCreated(store)
+	err := h.Handle(context.Background(), msg)
+	if err != pkg.ErrConflict {
+		t.Fatalf("expected to return err: %v", err)
+	}
+	if !store.AddInvoked {
+		t.Fatal("expected store.Add() to not be invoked")
 	}
 	if !acker.AckInvoked {
 		t.Fatal("expected message.Ack() to be invoked")

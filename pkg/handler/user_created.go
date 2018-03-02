@@ -27,6 +27,9 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 	user := new(pkg.User)
 	if err := json.Unmarshal(m.Body, user); err != nil {
 		log.Printf("failed to unmarshal message body: %v", err)
+		if err := m.Ack(false); err != nil {
+			log.Printf("failed to ack message: %v", err)
+		}
 		return err
 	}
 
@@ -41,14 +44,14 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 	case pkg.ErrConflict:
 		log.Print("user already exists")
 		if err := m.Ack(false); err != nil {
-			return fmt.Errorf("failed to nack message: %v", err)
+			log.Printf("failed to nack message: %v", err)
 		}
-		return nil
+		return err
 	default:
 		log.Printf("failed to add user to store: %v", err)
 		if err := m.Nack(false, true); err != nil {
-			return fmt.Errorf("failed to reject message: %v", err)
+			log.Printf("failed to reject message: %v", err)
 		}
-		return nil
+		return err
 	}
 }
