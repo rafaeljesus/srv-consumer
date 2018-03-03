@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/rafaeljesus/srv-consumer/pkg"
@@ -19,6 +20,19 @@ func TestUserEmailChanged(t *testing.T) {
 		{
 			scenario: "When valid payload is supplied, then should successfully save user",
 			function: testShouldSuccessfullyChangeUserEmail,
+		},
+		{
+			scenario: "When invalid payload is supplied, then should fail to unmarshal body",
+			function: testShouldFailToUnmarshalBody,
+		},
+		{
+			scenario: "When Not found user is supplied, then should fail to save",
+			function: testHandleNotFoundError,
+		},
+
+		{
+			scenario: "When unexpected error occurs, should be handled properly",
+			function: testHandleUnexpectedSaveError,
 		},
 	}
 
@@ -55,5 +69,70 @@ func testShouldSuccessfullyChangeUserEmail(t *testing.T, store *mock.UserStore, 
 
 	if !acker.AckInvoked {
 		t.Fatal("expected message.ack() to be called")
+	}
+}
+
+func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.SaveFunc = func(user *pkg.User) error { return nil }
+	acker.AckFunc = func(multiple bool) error { return nil }
+	body := []byte(`INVALID`)
+
+	msg := message.New(acker, body)
+	h := NewUserEmailChanged(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err but got nil")
+	}
+	if store.SaveInvoked {
+		t.Fatal("expected store.save() to not be called")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be called")
+	}
+}
+
+func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.SaveFunc = func(user *pkg.User) error { return pkg.ErrNotFound }
+	acker.AckFunc = func(multiple bool) error { return nil }
+	body := []byte(`{
+		"email": "foo@mail.com",
+		"username": "foo",
+		"status": "active"
+	}`)
+
+	msg := message.New(acker, body)
+	h := NewUserEmailChanged(store)
+	err := h.Handle(context.Background(), msg)
+	if err != pkg.ErrNotFound {
+		t.Fatalf("expected to return err but got %v", err)
+	}
+	if !store.SaveInvoked {
+		t.Fatal("expected store.Save() to not be called")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be called")
+	}
+}
+
+func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.SaveFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
+	acker.AckFunc = func(multiple bool) error { return nil }
+	body := []byte(`{
+		"email": "foo@mail.com",
+		"username": "foo",
+		"status": "active"
+	}`)
+
+	msg := message.New(acker, body)
+	h := NewUserEmailChanged(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err but got nil")
+	}
+	if !store.SaveInvoked {
+		t.Fatal("expected store.Save() to not be called")
+	}
+	if !acker.AckInvoked {
+		t.Fatal("expected message.Ack() to be called")
 	}
 }
