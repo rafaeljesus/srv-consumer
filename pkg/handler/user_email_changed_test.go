@@ -34,6 +34,10 @@ func TestUserEmailChanged(t *testing.T) {
 			scenario: "When unexpected error occurs, should be handled properly",
 			function: testHandleUnexpectedSaveError,
 		},
+		{
+			scenario: "When unable to Ack message, error should be handled properly",
+			function: testEmailChangeHandlerShouldFailToAck,
+		},
 	}
 
 	for _, test := range tests {
@@ -116,7 +120,7 @@ func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 
 func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
 	store.SaveFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
-	acker.AckFunc = func(multiple bool) error { return nil }
+	acker.NackFunc = func(multiple, requeue bool) error { return nil }
 	body := []byte(`{
 		"email": "foo@mail.com",
 		"username": "foo",
@@ -131,6 +135,28 @@ func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *m
 	}
 	if !store.SaveInvoked {
 		t.Fatal("expected store.Save() to not be called")
+	}
+	if !acker.NackInvoked {
+		t.Fatal("expected message.Ack() to be called")
+	}
+}
+
+func testEmailChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
+	store.SaveFunc = func(user *pkg.User) error { return nil }
+	acker.AckFunc = func(multiple bool) error { return errAcker }
+	body := []byte(`INVALID`)
+
+	msg := message.New(acker, body)
+	h := NewUserEmailChanged(store)
+	err := h.Handle(context.Background(), msg)
+	if err == nil {
+		t.Fatalf("expected to return err but got nil")
+	}
+	if err != errAcker {
+		t.Fatalf("expected to return errAcker, but got %v", err)
+	}
+	if store.SaveInvoked {
+		t.Fatal("expected store.save() to not be called")
 	}
 	if !acker.AckInvoked {
 		t.Fatal("expected message.Ack() to be called")
