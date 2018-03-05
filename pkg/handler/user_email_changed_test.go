@@ -51,8 +51,22 @@ func TestUserEmailChanged(t *testing.T) {
 }
 
 func testShouldSuccessfullyChangeUserEmail(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error { return nil }
-	acker.AckFunc = func(multiple bool) error { return nil }
+	store.SaveFunc = func(user *pkg.User) error {
+		if user.Email != "foo@mail.com" {
+			t.Fatal("unexpected email")
+		}
+		if user.Username != "foo" {
+			t.Fatal("unexpected username")
+		}
+
+		return nil
+	}
+	acker.AckFunc = func(multiple bool) error {
+		if multiple {
+			t.Fatal("unexpected multiple")
+		}
+		return nil
+	}
 
 	body := []byte(`{
 		"email": "foo@mail.com",
@@ -97,7 +111,12 @@ func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *m
 
 func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
 	store.SaveFunc = func(user *pkg.User) error { return pkg.ErrNotFound }
-	acker.AckFunc = func(multiple bool) error { return nil }
+	acker.AckFunc = func(multiple bool) error {
+		if multiple {
+			t.Fatal("unexpected multiple")
+		}
+		return nil
+	}
 	body := []byte(`{
 		"email": "foo@mail.com",
 		"username": "foo",
@@ -120,7 +139,15 @@ func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 
 func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
 	store.SaveFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
-	acker.NackFunc = func(multiple, requeue bool) error { return nil }
+	acker.NackFunc = func(multiple, requeue bool) error {
+		if multiple {
+			t.Fatal("unexpected multiple")
+		}
+		if !requeue {
+			t.Fatal("unexpected requeue")
+		}
+		return nil
+	}
 	body := []byte(`{
 		"email": "foo@mail.com",
 		"username": "foo",

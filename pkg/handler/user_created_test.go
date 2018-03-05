@@ -52,10 +52,10 @@ func TestUserCreated(t *testing.T) {
 
 func testHandleUserCreated(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
 	store.AddFunc = func(user *pkg.User) error {
-		if user.Email == "" {
+		if user.Email != "foo@mail.com" {
 			t.Fatal("unexpected email")
 		}
-		if user.Username == "" {
+		if user.Username != "foo" {
 			t.Fatal("unexpected username")
 		}
 		return nil
