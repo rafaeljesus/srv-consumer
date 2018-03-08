@@ -29,7 +29,6 @@ func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) erro
 		log.Printf("failed to unmarshal message body: %v", err)
 		if err := m.Ack(false); err != nil {
 			log.Printf("failed to ack message: %v", err)
-			return err
 		}
 		return err
 	}
@@ -46,7 +45,7 @@ func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) erro
 	case pkg.ErrNotFound:
 		log.Print("user not found")
 		if err := m.Ack(false); err != nil {
-			return fmt.Errorf("failed to ack message: %v", err)
+			log.Printf("failed to ack message: %v", err)
 		}
 		return err
 	default:

@@ -29,7 +29,6 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 		log.Printf("failed to unmarshal message body: %v", err)
 		if err := m.Ack(false); err != nil {
 			log.Printf("failed to ack message: %v", err)
-			return err
 		}
 		return err
 	}

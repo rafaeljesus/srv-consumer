@@ -18,25 +18,25 @@ func TestUserStatusChanged(t *testing.T) {
 		function func(*testing.T, *mock.UserStore, *mock.Acknowledger)
 	}{
 		{
-			scenario: "When valid payload is supplied, then should successfully save user",
-			function: testShouldSuccessfullyChangeUserStatus,
+			"when valid payload is supplied, then should successfully save user",
+			testShouldSuccessfullyChangeUserStatus,
 		},
 		{
-			scenario: "When invalid payload is supplied, then should fail to unmarshal body",
-			function: testStatusChangeHandlerShouldFailToUnmarshalBody,
+			"when invalid payload is supplied, then should fail to unmarshal body",
+			testStatusChangeHandlerShouldFailToUnmarshalBody,
 		},
 		{
-			scenario: "When Not found user is supplied, then should fail to save",
-			function: testStatusChangeHandlerNotFoundError,
+			"when Not found user is supplied, then should fail to save",
+			testStatusChangeHandlerNotFoundError,
 		},
 
 		{
-			scenario: "When unexpected error occurs, should be handled properly",
-			function: testStatusChangeHandlerUnexpectedSaveError,
+			"when unexpected error occurs, should be handled properly",
+			testStatusChangeHandlerUnexpectedSaveError,
 		},
 		{
-			scenario: "When unable to Ack message, error should be handled properly",
-			function: testStatusChangeHandlerShouldFailToAck,
+			"when unable to Ack message, error should be handled properly",
+			testStatusChangeHandlerShouldFailToAck,
 		},
 	}
 
@@ -57,7 +57,6 @@ func testShouldSuccessfullyChangeUserStatus(t *testing.T, store *mock.UserStore,
 		if user.Username != "foo" {
 			t.Fatal("unexpected username")
 		}
-
 		return nil
 	}
 	acker.AckFunc = func(multiple bool) error {
@@ -83,7 +82,6 @@ func testShouldSuccessfullyChangeUserStatus(t *testing.T, store *mock.UserStore,
 	if !store.SaveInvoked {
 		t.Fatal("expected store.save() to be called")
 	}
-
 	if !acker.AckInvoked {
 		t.Fatal("expected message.ack() to be called")
 	}
@@ -177,9 +175,6 @@ func testStatusChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore,
 	err := h.Handle(context.Background(), msg)
 	if err == nil {
 		t.Fatalf("expected to return err but got nil")
-	}
-	if err != errAcker {
-		t.Fatalf("expected to return errAcker, but got %v", err)
 	}
 	if store.SaveInvoked {
 		t.Fatal("expected store.save() to not be called")

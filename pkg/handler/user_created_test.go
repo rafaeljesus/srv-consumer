@@ -116,9 +116,6 @@ func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acke
 	if err == nil {
 		t.Fatalf("expected to return err: %v", err)
 	}
-	if err != errAcker {
-		t.Fatalf("expected to return errAcker, but got %v", err)
-	}
 	if store.AddInvoked {
 		t.Fatal("expected store.Add() to not be invoked")
 	}
