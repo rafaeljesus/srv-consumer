@@ -44,7 +44,7 @@ func (u *UserCreated) Handle(ctx context.Context, m *message.Message) error {
 	case pkg.ErrConflict:
 		log.Print("user already exists")
 		if err := m.Ack(false); err != nil {
-			log.Printf("failed to nack message: %v", err)
+			log.Printf("failed to ack message: %v", err)
 		}
 		return err
 	default:
