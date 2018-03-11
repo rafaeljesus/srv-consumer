@@ -1,7 +1,7 @@
 package amqp
 
 import (
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 	"github.com/streadway/amqp"
 )
 

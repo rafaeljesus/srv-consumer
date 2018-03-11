@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/rafaeljesus/srv-consumer/pkg"
+	"github.com/rafaeljesus/srv-consumer"
 )
 
 type (
@@ -13,7 +13,7 @@ type (
 		Driver  string
 		mu      sync.RWMutex
 		nextIDs map[interface{}]uint
-		users   map[uint]*pkg.User
+		users   map[uint]*srv.User
 	}
 )
 
@@ -21,7 +21,7 @@ type (
 func New(dsn string) *Storage {
 	return &Storage{
 		Driver:  "inmem",
-		users:   make(map[uint]*pkg.User),
+		users:   make(map[uint]*srv.User),
 		nextIDs: make(map[interface{}]uint),
 	}
 }

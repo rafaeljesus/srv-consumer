@@ -6,25 +6,25 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/rafaeljesus/srv-consumer/pkg"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 )
 
 type (
 	// UserStatusChanged is the message handler.
 	UserStatusChanged struct {
-		store pkg.UserStore
+		store srv.UserStore
 	}
 )
 
 // NewUserStatusChanged returns new UserStatusChanged struct.
-func NewUserStatusChanged(s pkg.UserStore) *UserStatusChanged {
+func NewUserStatusChanged(s srv.UserStore) *UserStatusChanged {
 	return &UserStatusChanged{s}
 }
 
 // Handle is the user status changed message handler.
 func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) error {
-	user := new(pkg.User)
+	user := new(srv.User)
 	if err := json.Unmarshal(m.Body, user); err != nil {
 		log.Printf("failed to unmarshal message body: %v", err)
 		if err := m.Ack(false); err != nil {
@@ -42,7 +42,7 @@ func (u *UserStatusChanged) Handle(ctx context.Context, m *message.Message) erro
 			return fmt.Errorf("failed to ack message: %v", err)
 		}
 		return nil
-	case pkg.ErrNotFound:
+	case srv.ErrNotFound:
 		log.Print("user not found")
 		if err := m.Ack(false); err != nil {
 			log.Printf("failed to ack message: %v", err)

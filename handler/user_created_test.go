@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/rafaeljesus/srv-consumer/pkg"
-	"github.com/rafaeljesus/srv-consumer/pkg/mock"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/mock"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 )
 
 var (
@@ -51,7 +51,7 @@ func TestUserCreated(t *testing.T) {
 }
 
 func testHandleUserCreated(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.AddFunc = func(user *pkg.User) error {
+	store.AddFunc = func(user *srv.User) error {
 		if user.Email != "foo@mail.com" {
 			t.Fatal("unexpected email")
 		}
@@ -87,7 +87,7 @@ func testHandleUserCreated(t *testing.T, store *mock.UserStore, acker *mock.Ackn
 }
 
 func testFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.AddFunc = func(user *pkg.User) error { return nil }
+	store.AddFunc = func(user *srv.User) error { return nil }
 	acker.AckFunc = func(multiple bool) error { return nil }
 	body := []byte(``)
 
@@ -106,7 +106,7 @@ func testFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Ac
 }
 
 func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.AddFunc = func(user *pkg.User) error { return nil }
+	store.AddFunc = func(user *srv.User) error { return nil }
 	acker.AckFunc = func(multiple bool) error { return errAcker }
 	body := []byte(``)
 
@@ -125,7 +125,7 @@ func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acke
 }
 
 func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.AddFunc = func(user *pkg.User) error { return pkg.ErrConflict }
+	store.AddFunc = func(user *srv.User) error { return srv.ErrConflict }
 	acker.AckFunc = func(multiple bool) error {
 		if multiple {
 			t.Fatal("unexpected multiple")
@@ -141,7 +141,7 @@ func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	msg := message.New(acker, body)
 	h := NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err != pkg.ErrConflict {
+	if err != srv.ErrConflict {
 		t.Fatalf("expected to return err: %v", err)
 	}
 	if !store.AddInvoked {
@@ -153,7 +153,7 @@ func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 }
 
 func testHandleUnexpectedError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.AddFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
+	store.AddFunc = func(user *srv.User) error { return errors.New("unexpected error") }
 	acker.NackFunc = func(multiple, requeue bool) error {
 		if multiple {
 			t.Fatal("unexpected multiple")

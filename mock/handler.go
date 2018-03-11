@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 )
 
 type (

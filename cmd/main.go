@@ -10,12 +10,12 @@ import (
 	"syscall"
 
 	"github.com/oklog/run"
-	"github.com/rafaeljesus/srv-consumer/pkg/handler"
-	"github.com/rafaeljesus/srv-consumer/pkg/listener"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message/amqp"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/stats"
-	"github.com/rafaeljesus/srv-consumer/pkg/storage/inmem"
+	"github.com/rafaeljesus/srv-consumer/handler"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
+	"github.com/rafaeljesus/srv-consumer/platform/message/amqp"
+	"github.com/rafaeljesus/srv-consumer/platform/stats"
+	"github.com/rafaeljesus/srv-consumer/register"
+	"github.com/rafaeljesus/srv-consumer/storage/inmem"
 )
 
 func main() {
@@ -56,17 +56,17 @@ func main() {
 		close(cancelchan)
 	})
 
-	s := new(stats.Client)
+	sts := new(stats.Client)
 	consumer := amqp.NewConsumer(ch)
 	for _, e := range events {
-		h, err := listener.New(e.routingKey, e.exchange, consumer, e.handler, s)
+		reg, err := register.New(e.routingKey, e.exchange, consumer, e.handler, sts)
 		if err != nil {
 			log.Fatalf("failed to create consumer: %v", err)
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
-			return h.Run(ctx)
+			return reg.Run(ctx)
 		}, func(error) {
 			cancel()
 		})

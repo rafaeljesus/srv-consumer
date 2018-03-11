@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/rafaeljesus/srv-consumer/pkg"
-	"github.com/rafaeljesus/srv-consumer/pkg/mock"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/mock"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 )
 
 func TestUserEmailChanged(t *testing.T) {
@@ -50,7 +50,7 @@ func TestUserEmailChanged(t *testing.T) {
 }
 
 func testShouldSuccessfullyChangeUserEmail(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error {
+	store.SaveFunc = func(user *srv.User) error {
 		if user.Email != "foo@mail.com" {
 			t.Fatal("unexpected email")
 		}
@@ -87,7 +87,7 @@ func testShouldSuccessfullyChangeUserEmail(t *testing.T, store *mock.UserStore, 
 }
 
 func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error { return nil }
+	store.SaveFunc = func(user *srv.User) error { return nil }
 	acker.AckFunc = func(multiple bool) error { return nil }
 	body := []byte(`INVALID`)
 
@@ -106,7 +106,7 @@ func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *m
 }
 
 func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error { return pkg.ErrNotFound }
+	store.SaveFunc = func(user *srv.User) error { return srv.ErrNotFound }
 	acker.AckFunc = func(multiple bool) error {
 		if multiple {
 			t.Fatal("unexpected multiple")
@@ -122,7 +122,7 @@ func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	msg := message.New(acker, body)
 	h := NewUserEmailChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err != pkg.ErrNotFound {
+	if err != srv.ErrNotFound {
 		t.Fatalf("expected to return err but got %v", err)
 	}
 	if !store.SaveInvoked {
@@ -134,7 +134,7 @@ func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 }
 
 func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error { return errors.New("unexpected error") }
+	store.SaveFunc = func(user *srv.User) error { return errors.New("unexpected error") }
 	acker.NackFunc = func(multiple, requeue bool) error {
 		if multiple {
 			t.Fatal("unexpected multiple")
@@ -165,7 +165,7 @@ func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *m
 }
 
 func testEmailChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
-	store.SaveFunc = func(user *pkg.User) error { return nil }
+	store.SaveFunc = func(user *srv.User) error { return nil }
 	acker.AckFunc = func(multiple bool) error { return errAcker }
 	body := []byte(`INVALID`)
 

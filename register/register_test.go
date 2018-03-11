@@ -1,4 +1,4 @@
-package listener
+package register
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rafaeljesus/srv-consumer/pkg/mock"
-	"github.com/rafaeljesus/srv-consumer/pkg/platform/message"
+	"github.com/rafaeljesus/srv-consumer/mock"
+	"github.com/rafaeljesus/srv-consumer/platform/message"
 	"github.com/streadway/amqp"
 )
 
