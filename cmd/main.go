@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	conn, ch, err := amqp.NewConnection("amqp://guest:guest@localhost:5672")
+	conn, ch, err := amqp.NewConnection(os.Getenv("AMQP_DSN"))
 	if err != nil {
 		log.Fatalf("failed to init rabbit connection: %v", err)
 	}
