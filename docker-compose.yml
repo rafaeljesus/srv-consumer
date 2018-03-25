@@ -2,19 +2,17 @@
 version: '3'
 services:
   consumer:
-    image: golang:alpine
+    build:
+      context: .
     volumes:
       - ./:/go/src/github.com/rafaeljesus/srv-consumer
-    working_dir: /go/src/github.com/rafaeljesus/srv-consumer
     environment:
       AMQP_DSN: "amqp://guest:guest@rabbitmq:5672"
-    command: go run cmd/main.go
     links:
-          - rabbitmq
+      - rabbitmq
     restart: on-failure
 
   rabbitmq:
     image: rabbitmq:alpine
     ports:
       - "5672:5672"
-

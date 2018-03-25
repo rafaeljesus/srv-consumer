@@ -4,8 +4,7 @@ An example program demonstrating how a consumer service could be written in Go.
 ```bash
 git clone github.com/rafaeljesus/srv-consumer
 cd srv-consumer
-make deps
-docker-compose up
+docker-compose up -d
 ```
 ## Tests
 ```bash
