@@ -1,0 +1,18 @@
+---
+version: '3'
+services:
+  consumer:
+    build:
+      context: .
+    volumes:
+      - ./:/go/src/github.com/rafaeljesus/srv-consumer
+    environment:
+      AMQP_DSN: "amqp://guest:guest@rabbitmq:5672"
+    links:
+      - rabbitmq
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:alpine
+    ports:
+      - "5672:5672"
