@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"context"
