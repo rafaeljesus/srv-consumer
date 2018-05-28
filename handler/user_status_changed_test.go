@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/handler"
 	"github.com/rafaeljesus/srv-consumer/mock"
 	"github.com/rafaeljesus/srv-consumer/platform/message"
+	"github.com/rafaeljesus/srv-consumer/test_helper"
 )
 
 func TestUserStatusChanged(t *testing.T) {
@@ -73,18 +75,12 @@ func testShouldSuccessfullyChangeUserStatus(t *testing.T, store *mock.UserStore,
 	}`)
 
 	msg := message.New(acker, body)
-	handler := NewUserStatusChanged(store)
-	err := handler.Handle(context.Background(), msg)
+	h := handler.NewUserStatusChanged(store)
+	err := h.Handle(context.Background(), msg)
 
-	if err != nil {
-		t.Fatalf("expected error to be nil, but got %v", err)
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.save() to be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.ack() to be called")
-	}
+	testhelper.Ok(t, err)
+	testhelper.Assert(t, store.SaveInvoked != false, "expected store.save() to be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.ack() to be called")
 }
 
 func testStatusChangeHandlerShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -93,17 +89,12 @@ func testStatusChangeHandlerShouldFailToUnmarshalBody(t *testing.T, store *mock.
 	body := []byte(`INVALID`)
 
 	msg := message.New(acker, body)
-	h := NewUserStatusChanged(store)
+	h := handler.NewUserStatusChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if store.SaveInvoked {
-		t.Fatal("expected store.save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked != true, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.ack() to be called")
 }
 
 func testStatusChangeHandlerNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -121,17 +112,12 @@ func testStatusChangeHandlerNotFoundError(t *testing.T, store *mock.UserStore, a
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserStatusChanged(store)
+	h := handler.NewUserStatusChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err != srv.ErrNotFound {
-		t.Fatalf("expected to return err but got %v", err)
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.Save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err == srv.ErrNotFound, "expected to return ErrNotFound but got %v", err)
+	testhelper.Assert(t, store.SaveInvoked != false, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.Ack() to be called")
 }
 
 func testStatusChangeHandlerUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -152,17 +138,12 @@ func testStatusChangeHandlerUnexpectedSaveError(t *testing.T, store *mock.UserSt
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserStatusChanged(store)
+	h := handler.NewUserStatusChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.Save() to not be called")
-	}
-	if !acker.NackInvoked {
-		t.Fatal("expected message.Nack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked == true, "expected message.ack() to not be called")
+	testhelper.Assert(t, acker.AckInvoked == false, "expected store.save() to be called")
 }
 
 func testStatusChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -171,15 +152,10 @@ func testStatusChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore,
 	body := []byte(`INVALID`)
 
 	msg := message.New(acker, body)
-	h := NewUserStatusChanged(store)
+	h := handler.NewUserStatusChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if store.SaveInvoked {
-		t.Fatal("expected store.save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked == false, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.ack() to be called")
 }

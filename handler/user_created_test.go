@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/handler"
 	"github.com/rafaeljesus/srv-consumer/mock"
 	"github.com/rafaeljesus/srv-consumer/platform/message"
+	"github.com/rafaeljesus/srv-consumer/test_helper"
 )
 
 var (
@@ -73,17 +75,12 @@ func testHandleUserCreated(t *testing.T, store *mock.UserStore, acker *mock.Ackn
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserCreated(store)
+	h := handler.NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err != nil {
-		t.Fatalf("expected to handle user created %v", err)
-	}
-	if !store.AddInvoked {
-		t.Fatal("expected store.Add() to be invoked")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be invoked")
-	}
+
+	testhelper.Ok(t, err)
+	testhelper.Assert(t, store.AddInvoked != false, "expected store.Add() to be invoked")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.Ack() to be invoked")
 }
 
 func testFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -92,17 +89,12 @@ func testFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	body := []byte(``)
 
 	msg := message.New(acker, body)
-	h := NewUserCreated(store)
+	h := handler.NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err: %v", err)
-	}
-	if store.AddInvoked {
-		t.Fatal("expected store.Add() to not be invoked")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be invoked")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.AddInvoked == false, "expected store.Add() to not be invoked")
+	testhelper.Assert(t, acker.AckInvoked == true, "expected message.Ack() to be invoked")
 }
 
 func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -111,17 +103,12 @@ func testFailAckWhenUnmarshalBodyError(t *testing.T, store *mock.UserStore, acke
 	body := []byte(``)
 
 	msg := message.New(acker, body)
-	h := NewUserCreated(store)
+	h := handler.NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err: %v", err)
-	}
-	if store.AddInvoked {
-		t.Fatal("expected store.Add() to not be invoked")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be invoked")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.AddInvoked == false, "expected store.Add() to not be invoked")
+	testhelper.Assert(t, acker.AckInvoked == true, "expected message.Ack() to be invoked")
 }
 
 func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -139,17 +126,12 @@ func testHandleConflictError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserCreated(store)
+	h := handler.NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err != srv.ErrConflict {
-		t.Fatalf("expected to return err: %v", err)
-	}
-	if !store.AddInvoked {
-		t.Fatal("expected store.Add() to not be invoked")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be invoked")
-	}
+
+	testhelper.Assert(t, err == srv.ErrConflict, "expected to return ErrConflict but got %v", err)
+	testhelper.Assert(t, store.AddInvoked == true, "expected store.Add() to not be invoked")
+	testhelper.Assert(t, acker.AckInvoked == true, "expected message.Ack() to be invoked")
 }
 
 func testHandleUnexpectedError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -170,15 +152,10 @@ func testHandleUnexpectedError(t *testing.T, store *mock.UserStore, acker *mock.
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserCreated(store)
+	h := handler.NewUserCreated(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err: %v", err)
-	}
-	if !store.AddInvoked {
-		t.Fatal("expected store.Add() to not be invoked")
-	}
-	if !acker.NackInvoked {
-		t.Fatal("expected message.Nack() to be invoked")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return error ,but got : %v", err)
+	testhelper.Assert(t, store.AddInvoked == true, "expected store.Add() to not be invoked")
+	testhelper.Assert(t, acker.NackInvoked == true, "expected message.Nack() to be invoked")
 }

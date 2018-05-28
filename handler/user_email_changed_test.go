@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/rafaeljesus/srv-consumer"
+	"github.com/rafaeljesus/srv-consumer/handler"
 	"github.com/rafaeljesus/srv-consumer/mock"
 	"github.com/rafaeljesus/srv-consumer/platform/message"
+	"github.com/rafaeljesus/srv-consumer/test_helper"
 )
 
 func TestUserEmailChanged(t *testing.T) {
@@ -73,17 +75,12 @@ func testShouldSuccessfullyChangeUserEmail(t *testing.T, store *mock.UserStore, 
 	}`)
 
 	msg := message.New(acker, body)
-	handler := NewUserEmailChanged(store)
-	err := handler.Handle(context.Background(), msg)
-	if err != nil {
-		t.Fatalf("expected error to be nil, but got %v", err)
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.save() to be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.ack() to be called")
-	}
+	h := handler.NewUserEmailChanged(store)
+	err := h.Handle(context.Background(), msg)
+
+	testhelper.Ok(t, err)
+	testhelper.Assert(t, store.SaveInvoked != false, "expected store.save() to be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.ack() to be called")
 }
 
 func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -92,17 +89,12 @@ func testShouldFailToUnmarshalBody(t *testing.T, store *mock.UserStore, acker *m
 	body := []byte(`INVALID`)
 
 	msg := message.New(acker, body)
-	h := NewUserEmailChanged(store)
+	h := handler.NewUserEmailChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if store.SaveInvoked {
-		t.Fatal("expected store.save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked != true, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.Ack() to be called")
 }
 
 func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -120,17 +112,12 @@ func testHandleNotFoundError(t *testing.T, store *mock.UserStore, acker *mock.Ac
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserEmailChanged(store)
+	h := handler.NewUserEmailChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err != srv.ErrNotFound {
-		t.Fatalf("expected to return err but got %v", err)
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.Save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err == srv.ErrNotFound, "expected to return ErrNotFound but got %v", err)
+	testhelper.Assert(t, store.SaveInvoked != false, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked != false, "expected message.Ack() to be called")
 }
 
 func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -151,17 +138,12 @@ func testHandleUnexpectedSaveError(t *testing.T, store *mock.UserStore, acker *m
 	}`)
 
 	msg := message.New(acker, body)
-	h := NewUserEmailChanged(store)
+	h := handler.NewUserEmailChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if !store.SaveInvoked {
-		t.Fatal("expected store.Save() to not be called")
-	}
-	if !acker.NackInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked == true, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked == false, "expected message.Ack() to be called")
 }
 
 func testEmailChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore, acker *mock.Acknowledger) {
@@ -170,15 +152,10 @@ func testEmailChangeHandlerShouldFailToAck(t *testing.T, store *mock.UserStore, 
 	body := []byte(`INVALID`)
 
 	msg := message.New(acker, body)
-	h := NewUserEmailChanged(store)
+	h := handler.NewUserEmailChanged(store)
 	err := h.Handle(context.Background(), msg)
-	if err == nil {
-		t.Fatalf("expected to return err but got nil")
-	}
-	if store.SaveInvoked {
-		t.Fatal("expected store.save() to not be called")
-	}
-	if !acker.AckInvoked {
-		t.Fatal("expected message.Ack() to be called")
-	}
+
+	testhelper.Assert(t, err != nil, "expected to return err: %v", err)
+	testhelper.Assert(t, store.SaveInvoked == false, "expected store.save() to not be called")
+	testhelper.Assert(t, acker.AckInvoked == true, "expected message.Ack() to be called")
 }

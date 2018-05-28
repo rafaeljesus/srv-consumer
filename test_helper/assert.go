@@ -1,6 +1,9 @@
-package test_helper
+package testhelper
 
 import (
+	"fmt"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
